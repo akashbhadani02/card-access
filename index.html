@@ -1,10 +1,13 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aducate RFID Access</title>
+
+    <title>Aducate Secure Access</title>
+
     <style>
         * {
             box-sizing: border-box;
@@ -17,6 +20,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
             font-family: Arial, sans-serif;
             background: radial-gradient(circle at top, #12284a, #050812 55%, #02030a);
             color: white;
@@ -28,7 +32,9 @@
             border: 1px solid rgba(0, 229, 255, 0.35);
             border-radius: 24px;
             background: rgba(8, 15, 30, 0.92);
-            box-shadow: 0 0 35px rgba(0, 229, 255, 0.15), inset 0 0 30px rgba(0, 140, 255, 0.04);
+            box-shadow:
+                0 0 35px rgba(0, 229, 255, 0.15),
+                inset 0 0 30px rgba(0, 140, 255, 0.04);
             text-align: center;
         }
 
@@ -67,6 +73,12 @@
         #connectBtn:hover {
             transform: translateY(-2px);
             box-shadow: 0 0 30px rgba(0, 229, 255, 0.35);
+        }
+
+        #connectBtn:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
+            transform: none;
         }
 
         #connectBtn.active {
@@ -135,53 +147,709 @@
             line-height: 1.5;
         }
 
-        .hidden {
-            display: none;
+        .driver-link {
+            display: inline-block;
+            margin-top: 12px;
+            color: #00e5ff;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .driver-link:hover {
+            text-decoration: underline;
         }
     </style>
+
 </head>
 
 <body>
-    <main class="card"> <!-- Change this path if your logo has another location --> <img class="logo"
-            src="/img/Aducate English Classes Logo.png" alt="LOGO">
+
+    <main class="card">
+
+        <img class="logo" src="/img/Aducate English Classes Logo.png" alt="Aducate Logo">
+
         <h1>Aducate Secure Access</h1>
-        <p class="subtitle"> Scan your registered RFID card to continue </p> <button id="connectBtn"> 🔐 Connect RFID
-            Reader </button>
-        <div id="status" class="status"> 🔴 RFID Reader Not Connected </div>
-        <div id="scanBox" class="scan-box">
-            <div class="scan-title"> Last Scanned Card </div>
-            <div id="uid" class="uid"> successfull </div>
-            <div id="message" class="message"> Waiting for authorization... </div>
+
+        <p class="subtitle">
+            Scan your registered card to continue
+        </p>
+
+        <button id="connectBtn">
+            🔐 Connect Verified Reader
+        </button>
+
+        <div id="status" class="status">
+            🔴 Reader Not Connected
         </div>
-        <div class="hint"> Connect your ESP8266 using USB and click <b>Connect RFID Reader</b>. </div>
-        <a href="./CH341SER.EXE">driver</a>
+
+        <div id="scanBox" class="scan-box">
+
+            <div class="scan-title">
+                Last Scanned Card
+            </div>
+
+            <div id="uid" class="uid">
+                Succcessful
+            </div>
+
+            <div id="message" class="message">
+                Waiting for authorization...
+            </div>
+
+        </div>
+
+        <div class="hint">
+            Connect your card reader using USB.
+            <br>
+            First connection requires browser permission.
+        </div>
+
+        <a class="driver-link" href="./CH341SER.EXE" download>
+            Download USB Driver
+        </a>
+
     </main>
-    <script>const connectBtn = document.getElementById("connectBtn"); const statusBox = document.getElementById("status"); const scanBox = document.getElementById("scanBox"); const uidBox = document.getElementById("uid"); const messageBox = document.getElementById("message"); let port = null; let reader = null; let keepReading = true;
-        const registeredCards = {"54FB6406": {name: "Akash Bhadani", dashboard: "https://ocygouocgowydsygcvisytdgvcydgcysdvtygcvdgcv.vercel.app"}, "533B5AC6610001": {name: "demo card", dashboard: "https://www.aducate.online"}};
-        if (!("serial" in navigator)) {connectBtn.disabled = true; statusBox.classList.add("denied"); statusBox.innerHTML = "❌ Web Serial is not supported in this browser.";}
-        connectBtn.addEventListener("click", async () => {
-            if (!("serial" in navigator)) {return;} try {
-                connectBtn.disabled = true; statusBox.className = "status"; statusBox.textContent = "🟡 Select your ESP8266 serial port...";
-                port = await navigator.serial.requestPort(); await port.open({baudRate: 115200}); connectBtn.classList.add("active"); connectBtn.textContent = "🟢 RFID Reader Active"; statusBox.className = "status active"; statusBox.textContent = "🟢 RFID Reader Active — Scan your card"; connectBtn.disabled = false; keepReading = true; readSerial();
-            } catch (error) {console.error(error); connectBtn.disabled = false; connectBtn.classList.remove("active"); connectBtn.textContent = "🔐 Connect RFID Reader"; statusBox.className = "status denied"; statusBox.textContent = "❌ RFID Reader connection cancelled";}
-        });
-        async function readSerial() {if (!port || !port.readable) {return;} const decoder = new TextDecoder(); reader = port.readable.getReader(); let buffer = ""; try {while (keepReading) {const {value, done} = await reader.read(); if (done) {break;} if (!value) {continue;} buffer += decoder.decode(value, {stream: true}); const lines = buffer.split(/\r?\n/); buffer = lines.pop() || ""; for (const line of lines) {processSerialLine(line.trim());} } } catch (error) {console.error("Serial read error:", error); reader = null; setDisconnected();} finally {try {reader.releaseLock();} catch (_) { } } }
-        function processSerialLine(line) {
-            if (!line) {return;} console.log("ESP8266:", line);
-            if (line === "RFID_READER_READY") {statusBox.className = "status active"; statusBox.textContent = "🟢 RFID Reader Active — Scan your card"; return;}
-            if (line.startsWith("RFID:")) {const uid = line.substring(5).trim().replace(/\s/g, "").toUpperCase(); if (!uid) {return;} handleCard(uid);}
-        }
-        function handleCard(uid) {
-            scanBox.classList.add("show"); uidBox.textContent; const card = registeredCards[uid];
-            if (card) {
-                messageBox.style.color = "#00ffae"; messageBox.innerHTML = "✓ Card Verified<br>" + "Welcome, <b>" + escapeHtml(card.name) + "</b>"; statusBox.className = "status active"; statusBox.textContent = "🟢 Card Authorized";
-                setTimeout(() => {window.location.href = card.dashboard;}, 3000);
+
+    <script>
+
+        const connectBtn = document.getElementById("connectBtn");
+        const statusBox = document.getElementById("status");
+        const scanBox = document.getElementById("scanBox");
+        const uidBox = document.getElementById("uid");
+        const messageBox = document.getElementById("message");
+
+        let port = null;
+        let reader = null;
+        let keepReading = false;
+        let checkingReader = false;
+
+
+        /* =====================================================
+           REGISTERED CARDS
+        ===================================================== */
+
+        const registeredCards = {
+
+            "54FB6406": {
+                name: "Akash Bhadani",
+                dashboard:
+                    "https://ocygouocgowydsygcvisytdgvcydgcysdvtygcvdgcv.vercel.app"
+            },
+
+            "533B5AC6610001": {
+                name: "Akash",
+                dashboard:
+                    "https://www.aducate.online"
             }
-            else {messageBox.style.color = "#ff6675"; messageBox.innerHTML = "✕ Access Denied<br>" + "This RFID card is not registered."; statusBox.className = "status denied"; statusBox.textContent = "🔴 Card Not Authorized";}
+
+        };
+
+
+        /* =====================================================
+           WEB SERIAL SUPPORT
+        ===================================================== */
+
+        if (!("serial" in navigator)) {
+
+            connectBtn.disabled = true;
+
+            statusBox.className = "status denied";
+
+            statusBox.textContent =
+                "❌ Web Serial is not supported in this browser.";
+
         }
-        navigator.serial?.addEventListener("disconnect", (event) => {if (port && event.target === port) {setDisconnected();} });
-        function setDisconnected() {connectBtn.classList.remove("active"); connectBtn.classList.add("error"); connectBtn.textContent = "🔴 RFID Reader Disconnected"; statusBox.className = "status denied"; statusBox.textContent = "🔴 RFID Reader Disconnected"; port = null;}
-        function escapeHtml(text) {const div = document.createElement("div"); div.textContent = text; return div.innerHTML;} </script>
+
+
+        /* =====================================================
+           ACTIVE UI
+        ===================================================== */
+
+        function setReaderActive() {
+
+            connectBtn.classList.remove("error");
+
+            connectBtn.classList.add("active");
+
+            connectBtn.textContent =
+                "🟢 Reader Active";
+
+            statusBox.className =
+                "status active";
+
+            statusBox.textContent =
+                "🟢 Reader Active — Scan your card";
+
+            connectBtn.disabled = false;
+        }
+
+
+        /* =====================================================
+           DISCONNECTED UI
+        ===================================================== */
+
+        function setReaderDisconnected() {
+
+            connectBtn.classList.remove("active");
+
+            connectBtn.classList.remove("error");
+
+            connectBtn.textContent =
+                "🔐 Connect Verified Reader";
+
+            statusBox.className =
+                "status";
+
+            statusBox.textContent =
+                "🔴 Reader Not Connected";
+
+            connectBtn.disabled = false;
+
+            port = null;
+            reader = null;
+        }
+
+
+        /* =====================================================
+           CHECK PREVIOUSLY AUTHORIZED READER
+        ===================================================== */
+
+        async function checkConnectedReader() {
+
+            if (!("serial" in navigator)) {
+                return;
+            }
+
+            if (checkingReader) {
+                return;
+            }
+
+            checkingReader = true;
+
+            try {
+
+                const ports =
+                    await navigator.serial.getPorts();
+
+
+                /*
+                    No authorized device
+                */
+
+                if (ports.length === 0) {
+
+                    setReaderDisconnected();
+
+                    return;
+                }
+
+
+                /*
+                    Find first available port
+                */
+
+                let selectedPort = null;
+
+                for (const p of ports) {
+
+                    selectedPort = p;
+                    break;
+
+                }
+
+
+                if (!selectedPort) {
+
+                    setReaderDisconnected();
+
+                    return;
+                }
+
+
+                port = selectedPort;
+
+
+                /*
+                    Open reader if required
+                */
+
+                if (!port.readable) {
+
+                    try {
+
+                        await port.open({
+                            baudRate: 115200
+                        });
+
+                    } catch (error) {
+
+                        /*
+                            Sometimes another reader
+                            read operation is still closing.
+                        */
+
+                        console.log(
+                            "Waiting for reader...",
+                            error
+                        );
+
+                        return;
+                    }
+
+                }
+
+
+                /*
+                    Reader connected
+                */
+
+                setReaderActive();
+
+
+                /*
+                    Start reading only once
+                */
+
+                if (!reader) {
+
+                    keepReading = true;
+
+                    readSerial();
+
+                }
+
+            }
+
+            catch (error) {
+
+                console.log(
+                    "Reader check:",
+                    error
+                );
+
+                setReaderDisconnected();
+
+            }
+
+            finally {
+
+                checkingReader = false;
+
+            }
+
+        }
+
+
+        /* =====================================================
+           CONNECT BUTTON
+        ===================================================== */
+
+        connectBtn.addEventListener(
+            "click",
+            async () => {
+
+                if (!("serial" in navigator)) {
+                    return;
+                }
+
+                try {
+
+                    connectBtn.disabled = true;
+
+                    statusBox.className = "status";
+
+                    statusBox.textContent =
+                        "🟡 Select your RFID reader...";
+
+
+                    /*
+                        Browser popup appears only
+                        for first-time permission.
+                    */
+
+                    const selectedPort =
+                        await navigator.serial.requestPort();
+
+
+                    port = selectedPort;
+
+
+                    await port.open({
+                        baudRate: 115200
+                    });
+
+
+                    setReaderActive();
+
+
+                    keepReading = true;
+
+                    readSerial();
+
+                }
+
+                catch (error) {
+
+                    console.error(
+                        "Connection error:",
+                        error
+                    );
+
+                    setReaderDisconnected();
+
+                }
+
+            }
+        );
+
+
+        /* =====================================================
+           SERIAL READING
+        ===================================================== */
+
+        async function readSerial() {
+
+            if (!port || !port.readable) {
+                return;
+            }
+
+
+            /*
+                Avoid opening multiple readers
+            */
+
+            if (reader) {
+                return;
+            }
+
+
+            const decoder =
+                new TextDecoder();
+
+
+            reader =
+                port.readable.getReader();
+
+
+            let buffer = "";
+
+
+            try {
+
+                while (keepReading) {
+
+                    const {
+                        value,
+                        done
+                    } =
+                        await reader.read();
+
+
+                    if (done) {
+                        break;
+                    }
+
+
+                    if (!value) {
+                        continue;
+                    }
+
+
+                    buffer += decoder.decode(
+                        value,
+                        {
+                            stream: true
+                        }
+                    );
+
+
+                    const lines =
+                        buffer.split(/\r?\n/);
+
+
+                    buffer =
+                        lines.pop() || "";
+
+
+                    for (const line of lines) {
+
+                        processSerialLine(
+                            line.trim()
+                        );
+
+                    }
+
+                }
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Serial read error:",
+                    error
+                );
+
+            }
+
+            finally {
+
+                try {
+
+                    reader.releaseLock();
+
+                } catch (_) { }
+
+                reader = null;
+
+            }
+
+        }
+
+
+        /* =====================================================
+           SERIAL DATA PROCESSING
+        ===================================================== */
+
+        function processSerialLine(line) {
+
+            if (!line) {
+                return;
+            }
+
+
+            console.log(
+                "RFID Reader:",
+                line
+            );
+
+
+            if (
+                line ===
+                "RFID_READER_READY"
+            ) {
+
+                setReaderActive();
+
+                return;
+            }
+
+
+            if (
+                line.startsWith("RFID:")
+            ) {
+
+                const uid =
+                    line
+                        .substring(5)
+                        .trim()
+                        .replace(/\s/g, "")
+                        .toUpperCase();
+
+
+                if (!uid) {
+                    return;
+                }
+
+
+                handleCard(uid);
+            }
+
+        }
+
+
+        /* =====================================================
+           HANDLE CARD
+        ===================================================== */
+
+        function handleCard(uid) {
+
+            scanBox.classList.add("show");
+
+
+            uidBox.textContent;
+
+
+            const card =
+                registeredCards[uid];
+
+
+            /*
+                CARD VERIFIED
+            */
+
+            if (card) {
+
+                messageBox.style.color =
+                    "#00ffae";
+
+
+                messageBox.innerHTML =
+                    "✓ Card Verified<br>" +
+                    "Welcome, <b>" +
+                    escapeHtml(card.name) +
+                    "</b>";
+
+
+                statusBox.className =
+                    "status active";
+
+
+                statusBox.textContent =
+                    "🟢 Card Authorized";
+
+
+                setTimeout(() => {
+
+                    window.location.href =
+                        card.dashboard;
+
+                }, 3000);
+
+            }
+
+
+            /*
+                CARD NOT REGISTERED
+            */
+
+            else {
+
+                messageBox.style.color =
+                    "#ff6675";
+
+
+                messageBox.innerHTML =
+                    "✕ Access Denied<br>" +
+                    "This RFID card is not registered.";
+
+
+                statusBox.className =
+                    "status denied";
+
+
+                statusBox.textContent =
+                    "🔴 Card Not Authorized";
+
+            }
+
+        }
+
+
+        /* =====================================================
+           USB DISCONNECT
+        ===================================================== */
+
+        if ("serial" in navigator) {
+
+            navigator.serial.addEventListener(
+                "disconnect",
+                event => {
+
+                    console.log(
+                        "🔴 RFID Reader disconnected"
+                    );
+
+
+                    if (
+                        port &&
+                        event.target === port
+                    ) {
+
+                        keepReading = false;
+
+                        port = null;
+
+                        reader = null;
+
+                        setReaderDisconnected();
+
+                    }
+
+                }
+            );
+
+
+            /*
+                ⭐ IMPORTANT:
+                When reader is plugged back in,
+                Chrome fires the "connect" event.
+            */
+
+            navigator.serial.addEventListener(
+                "connect",
+                event => {
+
+                    console.log(
+                        "🟢 RFID Reader connected again"
+                    );
+
+
+                    /*
+                        Small delay so USB device
+                        can initialize properly.
+                    */
+
+                    setTimeout(() => {
+
+                        checkConnectedReader();
+
+                    }, 500);
+
+                }
+            );
+
+        }
+
+
+        /* =====================================================
+           AUTO RECONNECT BACKUP CHECK
+        ===================================================== */
+
+        /*
+            Sometimes Windows/USB does not immediately
+            trigger the connect event.
+        
+            So every 2 seconds we check again.
+        
+            getPorts() does NOT show a popup.
+        */
+
+        setInterval(() => {
+
+            if (!port) {
+
+                checkConnectedReader();
+
+            }
+
+        }, 2000);
+
+
+        /* =====================================================
+           ESCAPE HTML
+        ===================================================== */
+
+        function escapeHtml(text) {
+
+            const div =
+                document.createElement("div");
+
+            div.textContent =
+                text;
+
+            return div.innerHTML;
+        }
+
+
+        /* =====================================================
+           INITIAL CHECK
+        ===================================================== */
+
+        checkConnectedReader();
+
+    </script>
+
 </body>
 
 </html>
