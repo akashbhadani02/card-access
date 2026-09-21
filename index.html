@@ -157,7 +157,7 @@
         <a href="./CH341SER.EXE">driver</a>
     </main>
     <script>const connectBtn = document.getElementById("connectBtn"); const statusBox = document.getElementById("status"); const scanBox = document.getElementById("scanBox"); const uidBox = document.getElementById("uid"); const messageBox = document.getElementById("message"); let port = null; let reader = null; let keepReading = true;
-        const registeredCards = {"54FB6406": {name: "Akash Bhadani", dashboard: "https://www.aducate.online"}, "533B5AC6610001": {name: "demo card", dashboard: ""}};
+        const registeredCards = {"54FB6406": {name: "Akash Bhadani", dashboard: "https://akashstudent.vercel.app"}, "533B5AC6610001": {name: "demo card", dashboard: "https://www.aducate.online"}};
         if (!("serial" in navigator)) {connectBtn.disabled = true; statusBox.classList.add("denied"); statusBox.innerHTML = "❌ Web Serial is not supported in this browser.";}
         connectBtn.addEventListener("click", async () => {
             if (!("serial" in navigator)) {return;} try {
