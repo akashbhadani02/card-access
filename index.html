@@ -222,6 +222,7 @@
         let reader = null;
         let keepReading = false;
         let checkingReader = false;
+        let redirectTimer = null;
 
 
         /* =====================================================
@@ -667,8 +668,11 @@
             scanBox.classList.add("show");
 
 
-            uidBox.textContent;
+            uidBox.textContent = uid;
 
+            if (redirectTimer) {
+                clearTimeout(redirectTimer);
+            }
 
             const card =
                 registeredCards[uid];
@@ -699,11 +703,9 @@
                     "🟢 Card Authorized";
 
 
-                setTimeout(() => {
-
-                    window.location.href =
-                        card.dashboard;
-
+                redirectTimer = setTimeout(() => {
+                    // Keep this page in browser history so Back returns here.
+                    window.location.href = card.dashboard;
                 }, 3000);
 
             }
@@ -734,6 +736,29 @@
             }
 
         }
+
+
+        /* =====================================================
+           RESTORE THIS ACCESS PAGE WHEN USER PRESSES BACK
+        ===================================================== */
+        window.addEventListener("pageshow", event => {
+            // When returning with the browser Back button, show the
+            // access page in its initial state instead of redirecting again.
+            if (event.persisted || document.visibilityState === "visible") {
+                if (redirectTimer) {
+                    clearTimeout(redirectTimer);
+                    redirectTimer = null;
+                }
+
+                scanBox.classList.remove("show");
+                uidBox.textContent = "Successful";
+                messageBox.textContent = "Waiting for authorization...";
+                statusBox.className = "status";
+                statusBox.textContent = "🔴 Reader Not Connected";
+                connectBtn.classList.remove("active", "error");
+                connectBtn.textContent = "🔐 Connect Verified Reader";
+            }
+        });
 
 
         /* =====================================================
