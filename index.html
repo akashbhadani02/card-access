@@ -1,10 +1,10 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Aducate Secure Access</title>
 
@@ -15,12 +15,6 @@
             padding: 0;
         }
 
-        html,
-        body {
-            width: 100%;
-            min-height: 100%;
-        }
-
         body {
             min-height: 100vh;
             display: flex;
@@ -28,13 +22,7 @@
             justify-content: center;
             padding: 20px;
             font-family: Arial, sans-serif;
-            background:
-                radial-gradient(
-                    circle at top,
-                    #12284a,
-                    #050812 55%,
-                    #02030a
-                );
+            background: radial-gradient(circle at top, #12284a, #050812 55%, #02030a);
             color: white;
         }
 
@@ -79,14 +67,12 @@
             font-weight: bold;
             cursor: pointer;
             transition: 0.25s;
-            box-shadow:
-                0 0 20px rgba(0, 140, 255, 0.25);
+            box-shadow: 0 0 20px rgba(0, 140, 255, 0.25);
         }
 
         #connectBtn:hover {
             transform: translateY(-2px);
-            box-shadow:
-                0 0 30px rgba(0, 229, 255, 0.35);
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.35);
         }
 
         #connectBtn:disabled {
@@ -97,8 +83,7 @@
 
         #connectBtn.active {
             background: #00a86b;
-            box-shadow:
-                0 0 25px rgba(0, 255, 160, 0.3);
+            box-shadow: 0 0 25px rgba(0, 255, 160, 0.3);
         }
 
         #connectBtn.error {
@@ -173,73 +158,15 @@
         .driver-link:hover {
             text-decoration: underline;
         }
-
-        /* =====================================================
-           PROTECTED APP VIEW
-           ===================================================== */
-
-        #appFrame {
-            display: none;
-            position: fixed;
-            inset: 0;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-            z-index: 99999;
-        }
-
-        #appFrame iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-            background: #000;
-        }
-
-        #appLoading {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 14px;
-            background: #02030a;
-            z-index: 2;
-            color: white;
-            font-size: 16px;
-        }
-
-        .loader {
-            width: 42px;
-            height: 42px;
-            border: 4px solid rgba(255,255,255,0.15);
-            border-top-color: #00e5ff;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
     </style>
+
 </head>
 
 <body>
 
-    <!-- =====================================================
-         WELCOME / RFID SCREEN
-         ===================================================== -->
+    <main class="card">
 
-    <main class="card" id="welcomeCard">
-
-        <img
-            class="logo"
-            src="./3d.webp"
-            alt="Aducate Logo"
-        >
+        <img class="logo" src="./3d.webp" alt="Aducate Logo">
 
         <h1>Aducate Secure Access</h1>
 
@@ -262,7 +189,7 @@
             </div>
 
             <div id="uid" class="uid">
-                Waiting...
+                Succcessful
             </div>
 
             <div id="message" class="message">
@@ -277,130 +204,66 @@
             First connection requires browser permission.
         </div>
 
-        <a
-            class="driver-link"
-            href="./CH341SER.EXE"
-            download
-        >
+        <a class="driver-link" href="./CH341SER.EXE" download>
             Download USB Driver
         </a>
 
     </main>
 
-
-    <!-- =====================================================
-         PROTECTED APP
-         ===================================================== -->
-
-    <div id="appFrame">
-
-        <div id="appLoading">
-            <div class="loader"></div>
-            <div>Loading Aducate...</div>
-        </div>
-
-        <iframe
-            id="protectedIframe"
-            src="about:blank"
-            allow="fullscreen"
-            allowfullscreen>
-        </iframe>
-
-    </div>
-
-
     <script>
 
-        /* =====================================================
-           ELEMENTS
-           ===================================================== */
+        const connectBtn = document.getElementById("connectBtn");
+        const statusBox = document.getElementById("status");
+        const scanBox = document.getElementById("scanBox");
+        const uidBox = document.getElementById("uid");
+        const messageBox = document.getElementById("message");
 
-        const connectBtn =
-            document.getElementById("connectBtn");
-
-        const statusBox =
-            document.getElementById("status");
-
-        const scanBox =
-            document.getElementById("scanBox");
-
-        const uidBox =
-            document.getElementById("uid");
-
-        const messageBox =
-            document.getElementById("message");
-
-        const welcomeCard =
-            document.getElementById("welcomeCard");
-
-        const appFrame =
-            document.getElementById("appFrame");
-
-        const protectedIframe =
-            document.getElementById("protectedIframe");
-
-        const appLoading =
-            document.getElementById("appLoading");
+        let port = null;
+        let reader = null;
+        let keepReading = false;
+        let checkingReader = false;
 
 
         /* =====================================================
            REGISTERED CARDS
-           ===================================================== */
+        ===================================================== */
 
         const registeredCards = {
 
             "54FB6406": {
-                name: "Akash Bhadani"
+                name: "Akash Bhadani",
+                dashboard:
+                    "https://ocygouocgowydsygcvisytdgvcydgcysdvtygcvdgcv.vercel.app"
             },
 
             "533B5AC6610001": {
-                name: "Akash"
+                name: "Akash",
+                dashboard:
+                    "https://www.aducate.online"
             }
 
         };
 
 
         /* =====================================================
-           APP URL
-           ===================================================== */
-
-        /*
-            IMPORTANT:
-
-            Do NOT put:
-            https://aall.vercel.app
-
-            here.
-
-            Vercel rewrite will handle:
-
-            /aall/
-                ↓
-            aall.vercel.app
-        */
-
-        const PROTECTED_APP_URL = "/aall/";
-
-
-        /* =====================================================
            WEB SERIAL SUPPORT
-           ===================================================== */
+        ===================================================== */
 
         if (!("serial" in navigator)) {
 
             connectBtn.disabled = true;
 
-            statusBox.className =
-                "status denied";
+            statusBox.className = "status denied";
 
             statusBox.textContent =
                 "❌ Web Serial is not supported in this browser.";
+
         }
 
 
         /* =====================================================
            ACTIVE UI
-           ===================================================== */
+        ===================================================== */
 
         function setReaderActive() {
 
@@ -423,7 +286,7 @@
 
         /* =====================================================
            DISCONNECTED UI
-           ===================================================== */
+        ===================================================== */
 
         function setReaderDisconnected() {
 
@@ -448,21 +311,8 @@
 
 
         /* =====================================================
-           SERIAL VARIABLES
-           ===================================================== */
-
-        let port = null;
-
-        let reader = null;
-
-        let keepReading = false;
-
-        let checkingReader = false;
-
-
-        /* =====================================================
            CHECK PREVIOUSLY AUTHORIZED READER
-           ===================================================== */
+        ===================================================== */
 
         async function checkConnectedReader() {
 
@@ -481,6 +331,11 @@
                 const ports =
                     await navigator.serial.getPorts();
 
+
+                /*
+                    No authorized device
+                */
+
                 if (ports.length === 0) {
 
                     setReaderDisconnected();
@@ -488,13 +343,20 @@
                     return;
                 }
 
+
+                /*
+                    Find first available port
+                */
+
                 let selectedPort = null;
 
                 for (const p of ports) {
 
                     selectedPort = p;
                     break;
+
                 }
+
 
                 if (!selectedPort) {
 
@@ -503,7 +365,13 @@
                     return;
                 }
 
+
                 port = selectedPort;
+
+
+                /*
+                    Open reader if required
+                */
 
                 if (!port.readable) {
 
@@ -515,6 +383,11 @@
 
                     } catch (error) {
 
+                        /*
+                            Sometimes another reader
+                            read operation is still closing.
+                        */
+
                         console.log(
                             "Waiting for reader...",
                             error
@@ -522,15 +395,27 @@
 
                         return;
                     }
+
                 }
 
+
+                /*
+                    Reader connected
+                */
+
                 setReaderActive();
+
+
+                /*
+                    Start reading only once
+                */
 
                 if (!reader) {
 
                     keepReading = true;
 
                     readSerial();
+
                 }
 
             }
@@ -549,13 +434,15 @@
             finally {
 
                 checkingReader = false;
+
             }
+
         }
 
 
         /* =====================================================
            CONNECT BUTTON
-           ===================================================== */
+        ===================================================== */
 
         connectBtn.addEventListener(
             "click",
@@ -569,22 +456,31 @@
 
                     connectBtn.disabled = true;
 
-                    statusBox.className =
-                        "status";
+                    statusBox.className = "status";
 
                     statusBox.textContent =
                         "🟡 Select your RFID reader...";
 
+
+                    /*
+                        Browser popup appears only
+                        for first-time permission.
+                    */
+
                     const selectedPort =
                         await navigator.serial.requestPort();
 
+
                     port = selectedPort;
+
 
                     await port.open({
                         baudRate: 115200
                     });
 
+
                     setReaderActive();
+
 
                     keepReading = true;
 
@@ -600,6 +496,7 @@
                     );
 
                     setReaderDisconnected();
+
                 }
 
             }
@@ -608,7 +505,7 @@
 
         /* =====================================================
            SERIAL READING
-           ===================================================== */
+        ===================================================== */
 
         async function readSerial() {
 
@@ -616,17 +513,26 @@
                 return;
             }
 
+
+            /*
+                Avoid opening multiple readers
+            */
+
             if (reader) {
                 return;
             }
 
+
             const decoder =
                 new TextDecoder();
+
 
             reader =
                 port.readable.getReader();
 
+
             let buffer = "";
+
 
             try {
 
@@ -638,13 +544,16 @@
                     } =
                         await reader.read();
 
+
                     if (done) {
                         break;
                     }
 
+
                     if (!value) {
                         continue;
                     }
+
 
                     buffer += decoder.decode(
                         value,
@@ -653,18 +562,23 @@
                         }
                     );
 
+
                     const lines =
                         buffer.split(/\r?\n/);
 
+
                     buffer =
                         lines.pop() || "";
+
 
                     for (const line of lines) {
 
                         processSerialLine(
                             line.trim()
                         );
+
                     }
+
                 }
 
             }
@@ -684,16 +598,18 @@
 
                     reader.releaseLock();
 
-                } catch (_) {}
+                } catch (_) { }
 
                 reader = null;
+
             }
+
         }
 
 
         /* =====================================================
            SERIAL DATA PROCESSING
-           ===================================================== */
+        ===================================================== */
 
         function processSerialLine(line) {
 
@@ -701,10 +617,12 @@
                 return;
             }
 
+
             console.log(
                 "RFID Reader:",
                 line
             );
+
 
             if (
                 line ===
@@ -715,6 +633,7 @@
 
                 return;
             }
+
 
             if (
                 line.startsWith("RFID:")
@@ -727,38 +646,43 @@
                         .replace(/\s/g, "")
                         .toUpperCase();
 
+
                 if (!uid) {
                     return;
                 }
 
+
                 handleCard(uid);
             }
+
         }
 
 
         /* =====================================================
            HANDLE CARD
-           ===================================================== */
+        ===================================================== */
 
         function handleCard(uid) {
 
             scanBox.classList.add("show");
 
-            uidBox.textContent =
-                uid;
+
+            uidBox.textContent;
+
 
             const card =
                 registeredCards[uid];
 
 
-            /* =================================================
-               CARD VERIFIED
-               ================================================= */
+            /*
+                CARD VERIFIED
+            */
 
             if (card) {
 
                 messageBox.style.color =
                     "#00ffae";
+
 
                 messageBox.innerHTML =
                     "✓ Card Verified<br>" +
@@ -766,135 +690,55 @@
                     escapeHtml(card.name) +
                     "</b>";
 
+
                 statusBox.className =
                     "status active";
+
 
                 statusBox.textContent =
                     "🟢 Card Authorized";
 
 
-                /*
-                    Open protected application
-                    after successful verification.
-                */
-
                 setTimeout(() => {
 
-                    openProtectedApp();
+                    window.location.href =
+                        card.dashboard;
 
-                }, 1500);
+                }, 3000);
 
             }
 
 
-            /* =================================================
-               CARD NOT REGISTERED
-               ================================================= */
+            /*
+                CARD NOT REGISTERED
+            */
 
             else {
 
                 messageBox.style.color =
                     "#ff6675";
 
+
                 messageBox.innerHTML =
                     "✕ Access Denied<br>" +
                     "This RFID card is not registered.";
 
+
                 statusBox.className =
                     "status denied";
 
+
                 statusBox.textContent =
                     "🔴 Card Not Authorized";
+
             }
-        }
 
-
-        /* =====================================================
-           OPEN PROTECTED APP
-           ===================================================== */
-
-        function openProtectedApp() {
-
-            /*
-                Stop RFID reading.
-            */
-
-            keepReading = false;
-
-
-            /*
-                Hide welcome screen.
-            */
-
-            welcomeCard.style.display =
-                "none";
-
-
-            /*
-                Show application frame.
-            */
-
-            appFrame.style.display =
-                "block";
-
-
-            /*
-                Show loading screen.
-            */
-
-            appLoading.style.display =
-                "flex";
-
-
-            /*
-                Load through your own domain.
-
-                Browser requests:
-
-                www.aducate.online/aall/
-
-                Vercel internally rewrites it to:
-
-                aall.vercel.app
-            */
-
-            protectedIframe.src =
-                PROTECTED_APP_URL;
-
-
-            /*
-                Hide loader after iframe loads.
-            */
-
-            protectedIframe.onload =
-                function () {
-
-                    setTimeout(() => {
-
-                        appLoading.style.display =
-                            "none";
-
-                    }, 500);
-                };
-
-
-            /*
-                Fallback:
-                remove loader after 8 seconds.
-            */
-
-            setTimeout(() => {
-
-                appLoading.style.display =
-                    "none";
-
-            }, 8000);
         }
 
 
         /* =====================================================
            USB DISCONNECT
-           ===================================================== */
+        ===================================================== */
 
         if ("serial" in navigator) {
 
@@ -905,6 +749,7 @@
                     console.log(
                         "🔴 RFID Reader disconnected"
                     );
+
 
                     if (
                         port &&
@@ -918,15 +763,18 @@
                         reader = null;
 
                         setReaderDisconnected();
+
                     }
 
                 }
             );
 
 
-            /* =================================================
-               USB CONNECT
-               ================================================= */
+            /*
+                ⭐ IMPORTANT:
+                When reader is plugged back in,
+                Chrome fires the "connect" event.
+            */
 
             navigator.serial.addEventListener(
                 "connect",
@@ -936,25 +784,43 @@
                         "🟢 RFID Reader connected again"
                     );
 
+
+                    /*
+                        Small delay so USB device
+                        can initialize properly.
+                    */
+
                     setTimeout(() => {
 
                         checkConnectedReader();
 
                     }, 500);
+
                 }
             );
+
         }
 
 
         /* =====================================================
            AUTO RECONNECT BACKUP CHECK
-           ===================================================== */
+        ===================================================== */
+
+        /*
+            Sometimes Windows/USB does not immediately
+            trigger the connect event.
+        
+            So every 2 seconds we check again.
+        
+            getPorts() does NOT show a popup.
+        */
 
         setInterval(() => {
 
             if (!port) {
 
                 checkConnectedReader();
+
             }
 
         }, 2000);
@@ -962,7 +828,7 @@
 
         /* =====================================================
            ESCAPE HTML
-           ===================================================== */
+        ===================================================== */
 
         function escapeHtml(text) {
 
@@ -978,7 +844,7 @@
 
         /* =====================================================
            INITIAL CHECK
-           ===================================================== */
+        ===================================================== */
 
         checkConnectedReader();
 
